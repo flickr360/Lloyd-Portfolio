@@ -9,7 +9,7 @@
   --concrete: #c9c6be;
   --line: #141414;
 
-  /* set + updated by ScrollBackground.astro's script */
+  /* updated by ScrollBackground.astro */
   --scroll-progress: 0;
   --scroll-y: 0;
 }
@@ -18,21 +18,29 @@
   box-sizing: border-box;
 }
 
+/* 1. Prevent rubber-banding/overscroll showing blank canvas or gaps */
 html {
-  scroll-behavior: smooth;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+  background-color: #000000;
+  color: #f2f0ea;
+  font-family: 'Space Grotesk', sans-serif;
+  scroll-behavior: auto;
+  overscroll-behavior-y: none;
+  overflow-x: hidden;
 }
 
 body {
   background-color: #000000;
   color: #f2f0ea;
-  font-family: 'Space Grotesk', sans-serif;
+  margin: 0;
+  min-height: 100vh;
   overflow-x: hidden;
+  position: relative;
+}
+
+/* 2. Prevent margin collapse from pushing body down */
+body::before {
+  content: '';
+  display: table;
 }
 
 h1 {
@@ -54,12 +62,16 @@ h1 {
 .bg-layer {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100vh;
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
+  contain: strict;
+  clip-path: inset(0); /* Clamps glow, shadows, or grid bleeding past edges */
 }
 
-/* Drifting blueprint grid — slow parallax opposite to scroll */
+/* Drifting blueprint grid — GPU translated */
 .bg-grid {
   position: absolute;
   inset: -20% -10%;
@@ -67,18 +79,18 @@ h1 {
     linear-gradient(to right, rgba(20, 20, 20, 0.07) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(20, 20, 20, 0.07) 1px, transparent 1px);
   background-size: 64px 64px;
-  transform: translateY(calc(var(--scroll-y) * -0.06px));
+  transform: translate3d(0, calc(var(--scroll-y) * -0.06px), 0);
   will-change: transform;
 }
 
-/* Giant rotating registration mark, tracks scroll progress */
+/* Rotating marks — 3D transforms for compositor execution */
 .bg-mark {
   position: absolute;
   top: 8%;
   right: -12%;
   width: min(70vw, 900px);
   height: min(70vw, 900px);
-  transform: translateY(calc(var(--scroll-y) * 0.18px)) rotate(calc(var(--scroll-progress) * 220deg));
+  transform: translate3d(0, calc(var(--scroll-y) * 0.18px), 0) rotate(calc(var(--scroll-progress) * 220deg));
   opacity: 0.5;
   will-change: transform;
 }
@@ -89,21 +101,24 @@ h1 {
   left: -14%;
   width: min(55vw, 700px);
   height: min(55vw, 700px);
-  transform: translateY(calc(var(--scroll-y) * -0.1px)) rotate(calc(var(--scroll-progress) * -160deg));
+  transform: translate3d(0, calc(var(--scroll-y) * -0.1px), 0) rotate(calc(var(--scroll-progress) * -160deg));
   opacity: 0.4;
   will-change: transform;
 }
 
-/* Horizontal scanner line */
+/* Horizontal scanner line — GPU translated, hides at top: 0 to eliminate top streak */
 .bg-scanline {
   position: absolute;
   left: 0;
   right: 0;
-  top: calc(var(--scroll-progress) * 100%);
+  top: 0;
   height: 1px;
   background: var(--accent);
-  box-shadow: 0 0 0 1px rgba(255, 61, 0, 0.15);
-  will-change: top;
+  box-shadow: 0 0 4px rgba(255, 61, 0, 0.25);
+  transform: translateY(calc(var(--scroll-progress) * 100vh));
+  will-change: transform;
+  opacity: calc(var(--scroll-progress) * 8);
+  transition: opacity 0.15s ease-out;
 }
 
 .bg-scanline::after {
@@ -118,10 +133,10 @@ h1 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .bg-grid,
   .bg-mark,
-  .bg-mark-2 {
+  .bg-mark-2,
+  .bg-scanline {
     transform: none !important;
   }
 
@@ -148,39 +163,34 @@ h1 {
 
 /* ---------- Apple "Liquid Glass" Cards ---------- */
 [data-glass-card][data-glass-card] {
-  background: var(--glass-card-bg, rgba(20, 24, 33, 0.45)) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  background: var(--glass-card-bg, rgba(20, 24, 33, 0.65)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
   border-radius: 24px !important;
 
-  /* Apple VisionOS/macOS optics: Heavy saturation + moderate blur */
-  backdrop-filter: blur(28px) saturate(190%) contrast(105%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(190%) contrast(105%) !important;
+  /* Optical balance: Crisp blur without GPU composition hitching */
+  backdrop-filter: blur(16px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
 
-  /* Specular rim lighting: Sharp top rim highlight + subtle bounce bottom */
   box-shadow:
-    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.42),
-    inset 0 -1.5px 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 0 20px 0 rgba(255, 255, 255, 0.02),
-    0 18px 36px -12px rgba(0, 0, 0, 0.35) !important;
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1.5px 1px 0 rgba(255, 255, 255, 0.06),
+    0 16px 32px -12px rgba(0, 0, 0, 0.35) !important;
 
   overflow: hidden;
-  isolation: isolate;
-  transition: box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.2s ease-out !important;
+  transform: translateZ(0); /* Hardware layer promotion */
+  transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
 }
 
-/* Interactive flashlight / specular sweep on hover */
+/* Interactive flashlight on hover */
 [data-glass-card][data-glass-card]::before {
   content: '';
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: radial-gradient(320px circle at var(--glass-card-mouse-x, 50%) var(--glass-card-mouse-y, 50%),
-      rgba(255, 255, 255, 0.22),
-      rgba(255, 255, 255, 0.04) 45%,
-      transparent 70%);
+  background: radial-gradient(300px circle at var(--glass-card-mouse-x, 50%) var(--glass-card-mouse-y, 50%),
+      rgba(255, 255, 255, 0.18),
+      transparent 65%);
   opacity: 0;
   transition: opacity 0.25s ease;
 }
@@ -197,9 +207,8 @@ h1 {
   z-index: 1;
   pointer-events: none;
   background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.12) 0%,
-      rgba(255, 255, 255, 0.02) 35%,
-      transparent 65%);
+      rgba(255, 255, 255, 0.08) 0%,
+      transparent 50%);
 }
 
 [data-glass-card][data-glass-card] .glass-card-header,
@@ -209,16 +218,21 @@ h1 {
 }
 
 [data-glass-card][data-glass-card]:hover {
-  border-color: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
   box-shadow:
-    inset 0 2px 1.5px 0 rgba(255, 255, 255, 0.65),
-    inset 0 -1.5px 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 0 24px 0 rgba(255, 255, 255, 0.05),
-    0 26px 48px -12px rgba(0, 0, 0, 0.45) !important;
+    inset 0 2px 1.5px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1.5px 1px 0 rgba(255, 255, 255, 0.1),
+    0 24px 40px -12px rgba(0, 0, 0, 0.45) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
   [data-glass-card][data-glass-card]::before {
     display: none;
   }
+}
+/* Instantly drop heavy filters when the page is moving */
+body.is-scrolling [data-glass-card] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(20, 24, 33, 0.88) !important;
 }
