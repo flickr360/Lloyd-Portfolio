@@ -34,7 +34,7 @@
     }
 
     // Capped at 400 for optimal fill-rate efficiency without visual sparse spots
-    var STAR_COUNT = Math.min(Math.floor((window.innerWidth * window.innerHeight) / 4500), 400);
+    var STAR_COUNT = Math.min(Math.floor((window.innerWidth * window.innerHeight) / 2500), 750);
     var stars = [];
     var starColors = ['#ffffff', '#f2f0ea', '#dbeafe', '#fef08a', '#ff3d00'];
 
@@ -134,7 +134,7 @@
       angularVelocity += (targetAngularVelocity - angularVelocity) * 0.1;
       targetAngularVelocity *= 0.85;
 
-      var sweepAngle = Math.max(-0.2, Math.min(0.2, angularVelocity * 2.0));
+      var sweepAngle = Math.max(-0.55, Math.min(0.55, angularVelocity * 4.5));
       isMoving = Math.abs(sweepAngle) > 0.001 && !reduceMotion;
 
       // Fast clear
