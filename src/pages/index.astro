@@ -144,33 +144,43 @@ const glassCards = [
 
 <Layout>
   <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
-    <Dock client:load>
-      <a href="#index" class="dock-item flex flex-col items-center justify-center p-2 group" aria-label="Index">
-        <span class="dock-label">Index</span>
-        <div class="w-10 h-10 rounded-[8px] text-[#ff3d00] border border-[#ff3d00] flex items-center justify-center font-display text-sm group-hover:bg-[#ff3d00] group-hover:text-paper transition-all">
-          IX
-        </div>
-      </a>
-      <a href="#about" class="dock-item flex flex-col items-center justify-center p-2 group" aria-label="About">
-        <span class="dock-label">About</span>
-        <div class="w-10 h-10 rounded-[8px] text-[#ff3d00] border border-[#ff3d00] flex items-center justify-center font-display text-sm group-hover:bg-[#ff3d00] group-hover:text-paper transition-all">
-          01
-        </div>
-      </a>
-      <a href="#work" class="dock-item flex flex-col items-center justify-center p-2 group" aria-label="Work">
-        <span class="dock-label">Work</span>
-        <div class="w-10 h-10 rounded-[8px] text-[#ff3d00] border border-[#ff3d00] flex items-center justify-center font-display text-sm group-hover:bg-[#ff3d00] group-hover:text-paper transition-all">
-          02
-        </div>
-      </a>
-      <a href="#contact" class="dock-item flex flex-col items-center justify-center p-2 group" aria-label="Contact">
-        <span class="dock-label">Contact</span>
-        <div class="w-10 h-10 rounded-[8px] text-[#ff3d00] border border-[#ff3d00] flex items-center justify-center font-display text-sm group-hover:bg-[#ff3d00] group-hover:text-paper transition-all">
-          04
-        </div>
-      </a>
-    </Dock>
-  </div>
+  <Dock client:load>
+    <a href="#index" class="dock-item flex flex-col items-center justify-center p-2 group" aria-label="Index">
+      <span class="dock-label">Index</span>
+      <div class="w-10 h-10 rounded-[8px] text-[#ff3d00] border border-[#ff3d00] flex items-center justify-center font-display text-sm group-hover:bg-[#ff3d00] group-hover:text-paper transition-all">
+        IX
+      </div>
+    </a>
+
+    <a href="#about" class="dock-item flex flex-col items-center justify-center p-2 group" aria-label="About">
+      <span class="dock-label">About</span>
+      <div class="w-10 h-10 rounded-[8px] text-[#ff3d00] border border-[#ff3d00] flex items-center justify-center font-display text-sm group-hover:bg-[#ff3d00] group-hover:text-paper transition-all">
+        01
+      </div>
+    </a>
+
+    <a href="#work" class="dock-item flex flex-col items-center justify-center p-2 group" aria-label="Work">
+      <span class="dock-label">Work</span>
+      <div class="w-10 h-10 rounded-[8px] text-[#ff3d00] border border-[#ff3d00] flex items-center justify-center font-display text-sm group-hover:bg-[#ff3d00] group-hover:text-paper transition-all">
+        02
+      </div>
+    </a>
+
+    <a href="#capabilities" class="dock-item flex flex-col items-center justify-center p-2 group" aria-label="Capabilities">
+      <span class="dock-label">Skills</span>
+      <div class="w-10 h-10 rounded-[8px] text-[#ff3d00] border border-[#ff3d00] flex items-center justify-center font-display text-sm group-hover:bg-[#ff3d00] group-hover:text-paper transition-all">
+        03
+      </div>
+    </a>
+
+    <a href="#contact" class="dock-item flex flex-col items-center justify-center p-2 group" aria-label="Contact">
+      <span class="dock-label">Contact</span>
+      <div class="w-10 h-10 rounded-[8px] text-[#ff3d00] border border-[#ff3d00] flex items-center justify-center font-display text-sm group-hover:bg-[#ff3d00] group-hover:text-paper transition-all">
+        04
+      </div>
+    </a>
+  </Dock>
+</div>
 
   <main class="relative">
     <section id="index" class="section-frame min-h-screen flex items-end px-5 md:px-8 pb-16 pt-28 scroll-mt-6 relative overflow-hidden">
@@ -398,18 +408,18 @@ const glassCards = [
       </div>
     </section>
 
-    <section class="section-frame px-5 md:px-8 py-24 md:py-32 border-t border-line bg-paper/60">
-      <p class="stamp text-xs text-ink/60 mb-10">§ 03 — CAPABILITIES</p>
-      <div class="flex flex-wrap gap-3">
-        {
-          capabilities.map((c) => (
-            <span class="stamp text-xs md:text-sm border border-line px-4 py-3">
-              {c}
-            </span>
-          ))
-        }
-      </div>
-    </section>
+<section id="capabilities" class="section-frame px-5 md:px-8 py-24 md:py-32 border-t border-line bg-paper/60 scroll-mt-6">
+  <p class="stamp text-xs text-ink/60 mb-10">§ 03 — CAPABILITIES</p>
+  <div class="flex flex-wrap gap-3">
+    {
+      capabilities.map((c) => (
+        <span class="stamp text-xs md:text-sm border border-line px-4 py-3">
+          {c}
+        </span>
+      ))
+    }
+  </div>
+</section>
 
     <div class="relative overflow-hidden bg-black text-[#f2f0ea] border-t border-line">
       <div 
