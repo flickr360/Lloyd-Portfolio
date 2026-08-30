@@ -1,0 +1,57 @@
+---
+const links = [
+  { href: '#index', label: 'INDEX' },
+  { href: '#work', label: 'WORK' },
+  { href: '#about', label: 'ABOUT' },
+  { href: '#contact', label: 'CONTACT' },
+];
+---
+
+<header class="fixed top-0 inset-x-0 z-50 border-b border-line bg-paper/90 backdrop-blur-sm">
+  <div class="flex items-center justify-between px-5 md:px-8 h-14">
+    <a href="#index" class="stamp text-sm font-bold">N&deg;&nbsp;001 / STUDIO</a>
+
+    <nav class="hidden md:flex items-center gap-6">
+      {
+        links.map((link) => (
+          <a
+            href={link.href}
+            class="stamp text-xs hover:text-accent transition-colors"
+          >
+            {link.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="stamp text-xs flex items-center gap-2">
+      <span class="hidden sm:inline text-concrete">SCROLL</span>
+      <span id="scroll-readout" class="tabular-nums">00%</span>
+    </div>
+  </div>
+</header>
+
+<script is:inline>
+  (function () {
+    var el = document.getElementById('scroll-readout');
+    if (!el) return;
+    var ticking = false;
+
+    function update() {
+      var root = document.documentElement;
+      var progress = parseFloat(getComputedStyle(root).getPropertyValue('--scroll-progress')) || 0;
+      el.textContent = Math.round(progress * 100).toString().padStart(2, '0') + '%';
+      ticking = false;
+    }
+
+    function onScroll() {
+      if (!ticking) {
+        requestAnimationFrame(update);
+        ticking = true;
+      }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    update();
+  })();
+</script>

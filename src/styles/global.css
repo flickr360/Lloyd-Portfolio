@@ -1,0 +1,224 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --paper: #f2f0ea;
+  --ink: #0b0b0b;
+  --accent: #ff3d00;
+  --concrete: #c9c6be;
+  --line: #141414;
+
+  /* set + updated by ScrollBackground.astro's script */
+  --scroll-progress: 0;
+  --scroll-y: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background-color: #000000;
+  color: #f2f0ea;
+  font-family: 'Space Grotesk', sans-serif;
+  overflow-x: hidden;
+}
+
+h1 {
+  color: #ff3d00;
+}
+
+/* ---------- Selection / focus ---------- */
+::selection {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* ---------- Scroll-driven background layer ---------- */
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Drifting blueprint grid — slow parallax opposite to scroll */
+.bg-grid {
+  position: absolute;
+  inset: -20% -10%;
+  background-image:
+    linear-gradient(to right, rgba(20, 20, 20, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(20, 20, 20, 0.07) 1px, transparent 1px);
+  background-size: 64px 64px;
+  transform: translateY(calc(var(--scroll-y) * -0.06px));
+  will-change: transform;
+}
+
+/* Giant rotating registration mark, tracks scroll progress */
+.bg-mark {
+  position: absolute;
+  top: 8%;
+  right: -12%;
+  width: min(70vw, 900px);
+  height: min(70vw, 900px);
+  transform: translateY(calc(var(--scroll-y) * 0.18px)) rotate(calc(var(--scroll-progress) * 220deg));
+  opacity: 0.5;
+  will-change: transform;
+}
+
+.bg-mark-2 {
+  position: absolute;
+  bottom: -10%;
+  left: -14%;
+  width: min(55vw, 700px);
+  height: min(55vw, 700px);
+  transform: translateY(calc(var(--scroll-y) * -0.1px)) rotate(calc(var(--scroll-progress) * -160deg));
+  opacity: 0.4;
+  will-change: transform;
+}
+
+/* Horizontal scanner line */
+.bg-scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--scroll-progress) * 100%);
+  height: 1px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(255, 61, 0, 0.15);
+  will-change: top;
+}
+
+.bg-scanline::after {
+  content: attr(data-label);
+  position: absolute;
+  right: 24px;
+  top: -22px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .bg-grid,
+  .bg-mark,
+  .bg-mark-2 {
+    transform: none !important;
+  }
+
+  .bg-scanline {
+    display: none;
+  }
+}
+
+/* ---------- Shared Brutalist Primitives ---------- */
+.hairline {
+  border-color: var(--line);
+}
+
+.stamp {
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.section-frame {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Apple "Liquid Glass" Cards ---------- */
+[data-glass-card][data-glass-card] {
+  background: var(--glass-card-bg, rgba(20, 24, 33, 0.45)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 24px !important;
+
+  /* Apple VisionOS/macOS optics: Heavy saturation + moderate blur */
+  backdrop-filter: blur(28px) saturate(190%) contrast(105%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) contrast(105%) !important;
+
+  /* Specular rim lighting: Sharp top rim highlight + subtle bounce bottom */
+  box-shadow:
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.42),
+    inset 0 -1.5px 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 20px 0 rgba(255, 255, 255, 0.02),
+    0 18px 36px -12px rgba(0, 0, 0, 0.35) !important;
+
+  overflow: hidden;
+  isolation: isolate;
+  transition: box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.2s ease-out !important;
+}
+
+/* Interactive flashlight / specular sweep on hover */
+[data-glass-card][data-glass-card]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(320px circle at var(--glass-card-mouse-x, 50%) var(--glass-card-mouse-y, 50%),
+      rgba(255, 255, 255, 0.22),
+      rgba(255, 255, 255, 0.04) 45%,
+      transparent 70%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+[data-glass-card][data-glass-card]:hover::before {
+  opacity: 1;
+}
+
+/* Glass lens curvature gradient */
+[data-glass-card][data-glass-card]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.12) 0%,
+      rgba(255, 255, 255, 0.02) 35%,
+      transparent 65%);
+}
+
+[data-glass-card][data-glass-card] .glass-card-header,
+[data-glass-card][data-glass-card] .glass-card-description {
+  position: relative;
+  z-index: 2;
+}
+
+[data-glass-card][data-glass-card]:hover {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow:
+    inset 0 2px 1.5px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -1.5px 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 24px 0 rgba(255, 255, 255, 0.05),
+    0 26px 48px -12px rgba(0, 0, 0, 0.45) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-glass-card][data-glass-card]::before {
+    display: none;
+  }
+}

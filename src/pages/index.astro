@@ -1,0 +1,557 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Dock from '@astroanimate/core/Dock';
+
+const GITHUB_USERNAME = 'flickr360'; // <-- Replace with your handle
+const CURRENT_YEAR = new Date().getFullYear();
+
+let gitContributions = [];
+let totalContributions = 0;
+
+try {
+  const res = await fetch(`https://github-contributions-api.jogruber.de/v4/${GITHUB_USERNAME}?y=${CURRENT_YEAR}`);
+  if (res.ok) {
+    const data = await res.json();
+    totalContributions = data.total?.[CURRENT_YEAR] || data.total?.lastYear || 0;
+    gitContributions = data.contributions || [];
+  }
+} catch (error) {
+  console.error('Failed to fetch GitHub contributions:', error);
+}
+
+// Fallback: 52 weeks * 7 days = 364 days
+if (gitContributions.length === 0) {
+  gitContributions = Array.from({ length: 364 }, () => ({ level: 0, count: 0, date: '' }));
+}
+
+// Ensure exactly 52 weeks (364 days) are sliced so the grid doesn't overflow or wrap unevenly
+const fullYearDays = gitContributions.slice(-364);
+
+// --- 2. Fetch Unfinished / Active Projects from GitHub ---
+let rawRepos = [];
+try {
+  // Fetches up to 100 recent repos sorted by most recently updated
+  const repoRes = await fetch(
+    `https://api.github.com/users/${GITHUB_USERNAME}/repos?sort=updated&per_page=100&type=owner`,
+    {
+      headers: {
+        'User-Agent': 'astro-portfolio-build',
+        'Accept': 'application/vnd.github.v3+json',
+      }
+    }
+  );
+  if (repoRes.ok) {
+    rawRepos = await repoRes.json();
+  }
+} catch (error) {
+  console.error('Failed to fetch GitHub repos:', error);
+}
+
+// Filter down to active, non-archived, non-forked repositories
+// (Optionally add repo.topics.includes('wip') if you tag them on GitHub)
+const activeRepos = rawRepos.filter(
+  (repo: { fork: any; archived: any; }) => !repo.fork && !repo.archived
+);
+
+const unfinishedCount = activeRepos.length || 0;
+
+// Grab the top 3 most recently pushed repositories for the card's micro-list
+const latestUnfinishedProjects = activeRepos.slice(0, 3).map((repo: { name: string; html_url: any; language: string; }) => ({
+  name: repo.name.replace(/[-_]/g, ' ').toUpperCase(),
+  url: repo.html_url,
+  status: repo.language ? repo.language.toUpperCase() : 'DEV',
+}));
+
+const projects = [
+  {
+    num: '01',
+    title: 'FLOOD SKIP',
+    year: '2026',
+    tags: ['WEBAPP', 'INTERACTION'],
+    blurb: 'A flood-aware navigation application built with Flutter, OpenStreetMap, OSRM, and a dedicated hazard backend.',
+  },
+  {
+    num: '02',
+    title: 'BARANGAYEGOVAPP',
+    year: '2024',
+    tags: ['WEBAPP', 'DESIGN SYSTEM'],
+    blurb: 'A web application for barangay-level governance, simplifying the process of local government service delivery and citizen engagement.',
+  },
+  {
+    num: '03',
+    title: 'PERSIA OCR',
+    year: '2024',
+    tags: ['ART DIRECTION'],
+    blurb: 'An AI-driven application that identifies a persian character by computer vision.',
+  },
+  {
+    num: '04',
+    title: 'SHOPHEAR',
+    year: '2023',
+    tags: ['WEB', 'INTERACTION'],
+    blurb: 'A web application that allows users to shop for products using voice commands, enhancing accessibility and convenience.',
+  },
+];
+
+const capabilities = [
+  'MYSQL',
+  'PHP',
+  'EXCEL',
+  'DASHBOARD DESIGN',
+  'FLUTTER',
+  'GIT',
+  'LARAVEL',
+  'UI/UX',
+  'WEB PERFORMANCE',
+  'POWERBI'
+];
+
+const glassCards = [
+  {
+    id: 'coffee',
+    title: 'COFFEE CONSUMED',
+    count: 1461,
+    unit: 'CUPS',
+    subtitle: 'Core Foundation',
+    description: 'A daily ritual of caffeine and code, fueling the creation of legible interfaces.',
+    bg: 'rgba(20, 24, 33, 0.90)',
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-coffee"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/><path d="M6 2v2"/></svg>'
+  },
+  {
+    id: 'design',
+    title: 'GIT COMMITS',
+    subtitle: 'Live Stream',
+    bg: 'rgba(20, 24, 33, 0.90)',
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>'
+  },
+  {
+    id: 'wip',
+    title: 'ACTIVE REPOS',
+    subtitle: 'GitHub Synced',
+    count: unfinishedCount,
+    unit: 'BUILDS',
+    items: latestUnfinishedProjects,
+    bg: 'rgba(20, 24, 33, 0.90)',
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/></svg>'
+  },
+  {
+    id: 'perf',
+    title: 'ACCESSIBILITY & PERF',
+    subtitle: 'Zero Overhead',
+    description: 'Sub-second loads, accessible semantic trees, and reduced-motion fallbacks.',
+    bg: 'rgba(20, 24, 33, 0.90)',
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>'
+  },
+];
+---
+
+<Layout>
+  <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
+  <Dock client:load>
+    <a href="#index" class="dock-item flex flex-col items-center justify-center p-2 group" aria-label="Index">
+      <span class="dock-label">Index</span>
+      <div class="w-10 h-10 rounded-[8px] text-[#ff3d00] border border-[#ff3d00] flex items-center justify-center font-display text-sm group-hover:bg-[#ff3d00] group-hover:text-paper transition-all">
+        IX
+      </div>
+    </a>
+    <a href="#about" class="dock-item flex flex-col items-center justify-center p-2 group" aria-label="About">
+      <span class="dock-label">About</span>
+      <div class="w-10 h-10 rounded-[8px] text-[#ff3d00] border border-[#ff3d00] flex items-center justify-center font-display text-sm group-hover:bg-[#ff3d00] group-hover:text-paper transition-all">
+        01
+      </div>
+    </a>
+    <a href="#work" class="dock-item flex flex-col items-center justify-center p-2 group" aria-label="Work">
+      <span class="dock-label">Work</span>
+      <div class="w-10 h-10 rounded-[8px] text-[#ff3d00] border border-[#ff3d00] flex items-center justify-center font-display text-sm group-hover:bg-[#ff3d00] group-hover:text-paper transition-all">
+        02
+      </div>
+    </a>
+    <a href="#contact" class="dock-item flex flex-col items-center justify-center p-2 group" aria-label="Contact">
+      <span class="dock-label">Contact</span>
+      <div class="w-10 h-10 rounded-[8px] text-[#ff3d00] border border-[#ff3d00] flex items-center justify-center font-display text-sm group-hover:bg-[#ff3d00] group-hover:text-paper transition-all">
+        04
+      </div>
+    </a>
+  </Dock>
+</div>
+  <main class="relative">
+    <section id="index" class="section-frame min-h-screen flex items-end px-5 md:px-8 pb-16 pt-28 scroll-mt-6 relative overflow-hidden">
+      <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <img
+          src="/warp.gif"
+          alt=""
+          aria-hidden="true"
+          class="w-full h-full object-cover object-center opacity-100 blur-[15px] scale-105"
+        />
+        
+        <div 
+          class="absolute inset-0 backdrop-blur-[1px]"
+          style="background: radial-gradient(circle at 50% 50%, transparent 10%, black 95%);"
+        ></div>
+      </div>
+
+      <div class="w-full relative z-10">
+        <p class="stamp hero-fade hero-fade-1 text-xs md:text-sm mb-6 text-[rgb(245,245,247)]">
+          PORTFOLIO&nbsp;DOSSIER — EST. 2020 — MANILA / REMOTE
+        </p>  
+
+        <h1 class="hero-fade hero-fade-2 font-display uppercase leading-[0.82] tracking-tightest2 text-[16vw] md:text-[10vw]">
+          [LLOYD<br />ANGARA]
+        </h1>
+
+        <div class="hero-fade hero-fade-3 mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full relative z-10">
+  {
+    glassCards.map((card) => (
+      <div
+        data-glass-card
+        style={`--glass-card-bg: ${card.bg};`}
+        class="group relative p-6 rounded-3xl flex flex-col justify-between min-h-[240px] text-white"
+      >
+        <div class="relative z-10 w-full flex-1 flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <div 
+              class="w-9 h-9 rounded-xl bg-black/[0.08] border border-white/20 flex items-center justify-center text-white" 
+              set:html={card.icon} 
+            />
+            <span class="stamp text-[10px] tracking-wider text-white/50">{card.subtitle}</span>
+          </div>
+
+          <h3 class="font-display text-xs tracking-wider uppercase text-white/80 mb-1">
+            {card.title}
+          </h3>
+
+          {/* CARD 1: Coffee Counter */}
+          {card.id === 'coffee' && (
+            <div class="mt-3 font-display text-8xl font-normal tracking-normal text-[#fd3d00] flex items-baseline gap-2">
+              <span id="coffee-counter" class="stat-counter tabular-nums" data-target={card.count}>
+                0
+              </span>
+              <span class="text-[11px] font-mono tracking-wider text-accent font-normal">
+                {card.unit}
+              </span>
+            </div>
+          )}
+
+          {/* CARD 2: Taller Full-Year Git Commits Graph */}
+          {card.id === 'design' && (
+            <div class="mt-3 flex-1 flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-mono text-[10px] tracking-widest text-[#fd3d00] uppercase font-bold">
+                  {totalContributions} COMMITS
+                </span>
+                <span class="font-mono text-[9px] text-white/40 tracking-wider">
+                  {CURRENT_YEAR}
+                </span>
+              </div>
+
+              <div class="w-full p-2.5 rounded-2xl bg-black/40 border border-white/10 flex-1 flex items-center">
+                <div class="grid grid-flow-col grid-rows-7 gap-[1.5px] sm:gap-[2px] w-full h-full min-h-[90px] justify-between items-stretch">
+                  {fullYearDays.map((day: { date: any; count: any; level: number; }) => (
+                    <div
+                      title={`${day.date || 'No Date'}: ${day.count || 0} commits`}
+                      class:list={[
+                        "w-[2.5px] min-[400px]:w-[3px] lg:w-[2.5px] xl:w-[1px] h-full min-h-[8px] rounded-[10px] transition-all duration-150",
+                        day.level === 0 && "bg-white/[0.07] hover:bg-white/30",
+                        day.level === 1 && "bg-[#fd3d00]/40",
+                        day.level === 2 && "bg-[#fd3d00]/70",
+                        day.level === 3 && "bg-[#fd3d00]",
+                        day.level >= 4 && "bg-[#fd3d00] shadow-[0_0_6px_#fd3d00]",
+                      ]}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CARD 3: GitHub Active Repos with Counter & Clickable Micro-List */}
+          {card.id === 'wip' && (
+            <div class="mt-3 flex-1 flex flex-col justify-between">
+              <div class="font-display text-7xl font-normal tracking-normal text-[#fd3d00] flex items-baseline gap-2 mb-2">
+                <span class="stat-counter tabular-nums" data-target={card.count}>
+                  0
+                </span>
+                <span class="text-[10px] font-mono tracking-widest text-white/50 uppercase">
+                  {card.unit}
+                </span>
+              </div>
+
+              <!-- Live GitHub Repo List -->
+              <div class="space-y-1.5 border-t border-white/10 pt-3">
+                {card.items?.length > 0 ? (
+                  card.items.map((item: { url: string | URL | null | undefined; name: unknown; status: unknown; }) => (
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="flex items-center justify-between text-[11px] font-mono tracking-wider group/item hover:text-[#ff3d00] transition-colors"
+                    >
+                      <span class="text-white/80 group-hover/item:text-[#ff3d00] truncate max-w-[135px] flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#fd3d00] animate-pulse"></span>
+                        {item.name}
+                      </span>
+                      <span class="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/10 text-white/50 group-hover/item:border-[#ff3d00]/40 group-hover/item:text-[#ff3d00]">
+                        {item.status}
+                      </span>
+                    </a>
+                  ))
+                ) : (
+                  <span class="text-[10px] font-mono text-white/40">NO ACTIVE BUILDS</span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Descriptions render only if card has one */}
+        {card.description && (
+          <p class="relative z-10 text-xs text-white/70 leading-relaxed mt-4">
+            {card.description}
+          </p>
+        )}
+      </div>
+    ))
+  }
+</div>
+
+        <div class="hero-fade hero-fade-3 mt-12 flex flex-col md:flex-row md:items-end md:justify-between gap-6 border-t text-[rgb(245,245,247)] pt-6">
+          <p class="stamp text-sm md:text-base max-w-md text-[rgb(245,245,247)]">
+            ANALYST - DESIGNER — DEVELOPER. BUILDING RAW, LEGIBLE INTERFACES/DASHBOARDS FOR
+            DIFFICULT PROBLEMS.
+          </p>
+          <a
+            href="#work"
+            class="stamp text-sm border border-line px-5 py-3 hover:bg-ink hover:text-paper transition-colors self-start"
+          >
+            VIEW WORK ↓
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" class="section-frame px-5 md:px-8 py-24 md:py-32 border-t border-line bg-paper/70 scroll-mt-6">
+      <div class="grid md:grid-cols-12 gap-8">
+        <div class="md:col-span-3">
+          <p class="stamp text-xs text-ink/60">§ 01 — ABOUT</p>
+        </div>
+        <div class="md:col-span-8 md:col-start-5">
+          <p class="font-body text-2xl md:text-4xl leading-snug">
+            I work at the seam between design and code — mostly for studios,
+            research groups, and small teams who need something that
+            <span class="text-accent">holds up under real content</span>,
+            not just a mockup.
+          </p>
+          <p class="stamp text-xs mt-10 text-ink/60 max-w-md">
+            REPLACE THIS BLOCK WITH YOUR OWN BIO. KEEP SENTENCES SHORT.
+            THE DOSSIER VOICE IS THE POINT.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- WORK -->
+    <section id="work" class="section-frame px-5 md:px-8 py-24 md:py-32 border-t border-white/20 scroll-mt-6">
+  <p class="stamp text-xs text-[#ffffff] mb-10">§ 02 — SELECTED WORK</p>
+
+  <div class="border-t border-white/20">
+    {
+      projects.map((p) => (
+        <a
+          href="#"
+          class="group relative grid md:grid-cols-12 gap-4 md:gap-8 items-center border-b border-white/20 py-8 text-[#ffffff] px-4 -mx-4 rounded-xl transition-all duration-200 hover:outline hover:outline-1 hover:outline-[#ff3d00] hover:shadow-[0_0_20px_rgba(255,61,0,0.15)] hover:border-transparent"
+        >
+          <span class="md:col-span-1 stamp text-xs text-white/50 group-hover:text-[#ff3d00] transition-colors">
+            {p.num}
+          </span>
+          <span class="md:col-span-5 font-display uppercase text-3xl md:text-5xl leading-none text-[#ffffff] group-hover:text-[#ff3d00] transition-colors">
+            {p.title}
+          </span>
+          <span class="md:col-span-4 font-body text-sm md:text-base text-white/70 group-hover:text-white transition-colors">
+            {p.blurb}
+          </span>
+          <span class="md:col-span-2 flex md:justify-end gap-2 flex-wrap">
+            {p.tags.map((t) => (
+              <span class="stamp text-[10px] border border-white/30 text-[#ffffff] group-hover:border-[#ff3d00]/60 group-hover:text-[#ff3d00] px-2 py-1 transition-colors">
+                {t}
+              </span>
+            ))}
+          </span>
+        </a>
+      ))
+    }
+  </div>
+</section>
+
+    <section class="section-frame px-5 md:px-8 py-24 md:py-32 border-t border-line bg-paper/60">
+      <p class="stamp text-xs text-ink/60 mb-10">§ 03 — CAPABILITIES</p>
+      <div class="flex flex-wrap gap-3">
+        {
+          capabilities.map((c) => (
+            <span class="stamp text-xs md:text-sm border border-line px-4 py-3">
+              {c}
+            </span>
+          ))
+        }
+      </div>
+    </section>
+
+    <div class="relative overflow-hidden bg-black text-[#f2f0ea] border-t border-line">
+      <div 
+        class="pointer-events-none absolute inset-x-0 top-0 h-100 z-10"
+        style="background: radial-gradient(ellipse 80% 90% at 50% 90%, transparent 10%, rgba(0, 0, 0, 0) 70%, rgba(242, 280, 234, 0.8) 85%, var(--paper) 95%);"
+      ></div>
+
+      <div class="absolute inset-0 z-0 pointer-events-none opacity-90 mix-blend-screen">
+        <video
+          id="bg-video"
+          autoplay
+          loop
+          muted
+          playsinline
+          class="w-full h-full object-cover object-bottom blur-[8.5px]"
+        >
+          <source src="/blackhole.mp4" type="video/mp4" />
+          <source src="/blackhole.webm" type="video/webm" />
+        </video>
+
+        <div 
+          class="absolute inset-0"
+        ></div>
+      </div>
+
+      <section id="contact" class="relative z-20 section-frame px-5 md:px-8 pt-44 pb-28 md:pt-60 md:pb-40 scroll-mt-6">
+        <p class="stamp text-xs text-[#f2f0ea]/60 mb-8">§ 04 — CONTACT</p>
+        <a
+          href="mailto:lloydangaraa@gmail.com"
+          class="font-display uppercase text-[13vw] md:text-[7vw] leading-[0.85] block text-white hover:text-accent transition-colors drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)]"
+        >
+          LET'S TALK →
+        </a>
+        <div class="mt-12 flex flex-wrap gap-x-10 gap-y-4 stamp text-xs text-[#f2f0ea]/70">
+          <span>LLOYDANGARAA@GMAIL.COM</span>
+          <span>@HAL__O_</span>
+          <span>AVAILABLE FROM Q1 2026</span>
+        </div>
+      </section>
+
+      <footer class="relative z-20 section-frame px-5 md:px-8 py-8 border-t border-[rgb(245,245,247)] flex items-center justify-between">
+        <span class="stamp text-[10px] text-[rgb(245,245,247)]">
+          © 2026 [LLOYD ANGARA]. ALL RIGHTS RESERVED.
+        </span>
+        <a
+          href="#index"
+          class="stamp text-[10px]text-[rgb(245,245,247)] hover:text-accent transition-colors"
+        >
+          BACK TO TOP ↑
+        </a>
+      </footer>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  /* Entrance animation hooked to the preloader completion */
+  .hero-fade {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+
+  /* Staggered entrance timing */
+  :global(.loader-complete) .hero-fade-1 {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.05s;
+  }
+
+  :global(.loader-complete) .hero-fade-2 {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.18s;
+  }
+
+  :global(.loader-complete) .hero-fade-3 {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.32s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-fade {
+      opacity: 1 !important;
+      transform: none !important;
+      transition: none !important;
+    }
+  }
+</style>
+
+<script is:inline>
+  // Specular flashlight sweep on mousemove for glass cards
+  document.querySelectorAll('[data-glass-card]').forEach((card) => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      card.style.setProperty('--glass-card-mouse-x', `${e.clientX - rect.left}px`);
+      card.style.setProperty('--glass-card-mouse-y', `${e.clientY - rect.top}px`);
+    });
+  });
+
+  // Unified Stat Counter Animation (Coffee + Active Repos)
+  function triggerStatCounters() {
+    var counters = document.querySelectorAll('.stat-counter');
+    counters.forEach(function (counter) {
+      if (counter.getAttribute('data-started') === 'true') return;
+      counter.setAttribute('data-started', 'true');
+
+      var target = parseInt(counter.getAttribute('data-target'), 10) || 0;
+      var duration = 2000;
+      var startTime = performance.now();
+
+      function update(now) {
+        var elapsed = now - startTime;
+        var progress = Math.min(elapsed / duration, 1);
+        var easeOut = 1 - Math.pow(1 - progress, 3);
+        var currentVal = Math.floor(easeOut * target);
+
+        counter.textContent = currentVal.toLocaleString();
+
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        } else {
+          counter.textContent = target.toLocaleString();
+        }
+      }
+
+      requestAnimationFrame(update);
+    });
+  }
+
+  // 1. Listen for preloader finish event
+  window.addEventListener('loader:finished', function () {
+    setTimeout(triggerStatCounters, 320);
+  });
+
+  // 2. MutationObserver fallback
+  var observer = new MutationObserver(function () {
+    if (document.documentElement.classList.contains('loader-complete')) {
+      setTimeout(triggerStatCounters, 320);
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+  // 3. Immediate execution if page is already loaded
+  if (document.documentElement.classList.contains('loader-complete') || document.readyState === 'complete') {
+    setTimeout(triggerStatCounters, 320);
+  }
+
+  // Video fallback for reduced motion
+  (function () {
+    var video = document.getElementById('bg-video');
+    if (!video) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      video.pause();
+      video.removeAttribute('autoplay');
+    }
+  })();
+</script>

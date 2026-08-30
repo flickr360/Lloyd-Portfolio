@@ -1,0 +1,214 @@
+---
+// Clean Deep Space Background: Gyroscopic Curved Star Trails with Occasional Twinkles
+---
+
+<div class="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-[#030305]" aria-hidden="true">
+  <!-- Canvas for orbital curved streaks -->
+  <canvas id="space-star-canvas" class="w-full h-full object-cover pointer-events-none"></canvas>
+
+  <!-- Dual-layer subtle vignette and frosted diffusion to keep UI legible -->
+  <div 
+    class="absolute inset-0 pointer-events-none backdrop-blur-[1px]"
+    style="background: radial-gradient(circle at 75% 25%, rgba(3,3,5,0.2) 0%, rgba(0,0,0,0.88) 85%);"
+  ></div>
+</div>
+
+<script is:inline>
+  (function () {
+    var canvas = document.getElementById('space-star-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var width = (canvas.width = window.innerWidth);
+    var height = (canvas.height = window.innerHeight);
+
+    // Focal point for gyroscopic rotation (positioned slightly off-screen top-right)
+    var originX = width * 0.85;
+    var originY = -height * 0.15;
+
+    window.addEventListener('resize', function () {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      originX = width * 0.80;
+      originY = -height * 0.15;
+      initStars();
+    });
+
+    var STAR_COUNT = Math.min(Math.floor((width * height) / 3600), 650);
+    var stars = [];
+    var starPalette = ['#ffffff', '#f2f0ea', '#dbeafe', '#fef08a', '#ff3d00'];
+
+    function initStars() {
+      stars = [];
+      var maxRadius = Math.hypot(Math.max(originX, width - originX), Math.max(originY, height - originY)) * 1;
+
+      for (var i = 0; i < STAR_COUNT; i++) {
+        var isAccent = Math.random() > 0.90;
+
+        // Dynamic exponential size distribution
+        var sizeTier = Math.random();
+        var baseSize;
+        if (sizeTier > 0.95) {
+          baseSize = Math.random() * 1.4 + 2; // Rare large stars
+        } else if (sizeTier > 0.70) {
+          baseSize = Math.random() * 0.8 + 2; // Medium stars
+        } else {
+          baseSize = Math.random() * 0.5 + 1; // Distant micro-dust
+        }
+
+        stars.push({
+          radius: Math.pow(Math.random(), 0.85) * maxRadius + 30,
+          angle: Math.random() * Math.PI * 2,
+          baseSize: baseSize,
+          color: isAccent ? '#ff3d00' : starPalette[Math.floor(Math.random() * (starPalette.length - 1))],
+          baseAlpha: Math.random() * 0.45 + 0.25,
+          speedMult: Math.random() * 0.6 + 0.7,
+          
+          // Twinkle state: inactive by default
+          isTwinkling: false,
+          twinkleProgress: 0,
+          twinkleDuration: 1200,
+        });
+      }
+    }
+
+    initStars();
+
+    // Twinkle Controller: maintains 2 to 10 actively twinkling stars at any given time
+    var TARGET_ACTIVE_TWINKLES = Math.floor(Math.random() * 9) + 2; // 2 to 10
+    var nextCountCheck = 0;
+
+    function updateTwinkleQueue(timestamp) {
+      if (timestamp > nextCountCheck) {
+        TARGET_ACTIVE_TWINKLES = Math.floor(Math.random() * 9) + 2;
+        nextCountCheck = timestamp + Math.random() * 2000 + 1500;
+      }
+
+      var currentActive = 0;
+      for (var i = 0; i < stars.length; i++) {
+        if (stars[i].isTwinkling) currentActive++;
+      }
+
+      // If we have fewer active twinkles than our target, ignite a random star
+      if (currentActive < TARGET_ACTIVE_TWINKLES && stars.length > 0) {
+        var candidate = stars[Math.floor(Math.random() * stars.length)];
+        if (!candidate.isTwinkling) {
+          candidate.isTwinkling = true;
+          candidate.twinkleProgress = 0;
+          candidate.twinkleDuration = Math.random() * 1200 + 800; // 0.8s to 2s flash
+        }
+      }
+    }
+
+    // Scroll tracking & angular inertia
+    var root = document.documentElement;
+    var lastScrollY = window.scrollY || root.scrollTop;
+    var angularVelocity = 0;
+    var targetAngularVelocity = 0;
+    var ticking = false;
+
+    function onScroll() {
+      var currentY = window.scrollY || root.scrollTop;
+      var delta = currentY - lastScrollY;
+      lastScrollY = currentY;
+
+      targetAngularVelocity = delta * 0.0035;
+
+      if (!ticking) {
+        requestAnimationFrame(function () {
+          var docHeight = root.scrollHeight - window.innerHeight;
+          var progress = docHeight > 0 ? currentY / docHeight : 0;
+          root.style.setProperty('--scroll-y', currentY.toFixed(1));
+          root.style.setProperty('--scroll-progress', progress.toFixed(4));
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    var lastTimestamp = 0;
+
+    function render(timestamp) {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      var dt = timestamp - lastTimestamp;
+      lastTimestamp = timestamp;
+
+      angularVelocity += (targetAngularVelocity - angularVelocity) * 0.085;
+      targetAngularVelocity *= 0.88;
+
+      ctx.clearRect(0, 0, width, height);
+
+      var sweepAngle = Math.max(-0.24, Math.min(0.24, angularVelocity * 2.2));
+      var isMoving = Math.abs(sweepAngle) > 0.002 && !reduceMotion;
+
+      if (!isMoving) {
+        updateTwinkleQueue(timestamp);
+      }
+
+      for (var i = 0; i < stars.length; i++) {
+        var s = stars[i];
+
+        var currentAlpha = s.baseAlpha;
+        var currentSize = s.baseSize;
+
+        // Progress the active twinkle for this star
+        if (s.isTwinkling && !isMoving) {
+          s.twinkleProgress += dt / s.twinkleDuration;
+          if (s.twinkleProgress >= 1) {
+            s.isTwinkling = false;
+            s.twinkleProgress = 0;
+          } else {
+            // Smooth bell-curve flash (0 -> 1 -> 0)
+            var flare = Math.sin(s.twinkleProgress * Math.PI);
+            currentAlpha = Math.min(1.0, s.baseAlpha + flare * 0.65);
+            currentSize = s.baseSize * (1 + flare * 1.8);
+          }
+        }
+
+        ctx.save();
+        ctx.strokeStyle = s.color;
+        ctx.fillStyle = s.color;
+        ctx.globalAlpha = isMoving ? s.baseAlpha : currentAlpha;
+        ctx.lineWidth = currentSize;
+        ctx.lineCap = 'round';
+
+        // Bloom only pops on the active twinkling stars
+        ctx.shadowBlur = isMoving ? 7 : (s.isTwinkling ? 8 : 1.5);
+        ctx.shadowColor = s.color;
+
+        if (isMoving) {
+          var arcLength = sweepAngle * s.speedMult;
+
+          ctx.beginPath();
+          ctx.arc(
+            originX,
+            originY,
+            s.radius,
+            s.angle,
+            s.angle + arcLength,
+            arcLength < 0
+          );
+          ctx.stroke();
+
+          s.angle += arcLength * 0.04;
+        } else {
+          var x = originX + Math.cos(s.angle) * s.radius;
+          var y = originY + Math.sin(s.angle) * s.radius;
+
+          ctx.beginPath();
+          ctx.arc(x, y, currentSize, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    requestAnimationFrame(render);
+  })();
+</script>

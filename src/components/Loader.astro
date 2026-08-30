@@ -1,0 +1,137 @@
+---
+// Full-screen preloader. Shown until the window 'load' event fires
+// (or a safety timeout elapses), then wipes up to reveal the page.
+// Locks scroll while visible; removes itself from the a11y tree after.
+---
+
+<div
+  id="loader"
+  class="loader fixed inset-0 z-[100] bg-ink text-paper flex flex-col justify-between"
+  role="status"
+  aria-live="polite"
+  aria-label="Loading"
+>
+  <div class="flex items-center justify-between px-5 md:px-8 pt-6">
+    <span class="stamp text-xs text-paper/60">N&deg;&nbsp;001 / STUDIO</span>
+    <span class="stamp text-xs text-paper/60">LOADING</span>
+  </div>
+
+  <div class="px-5 md:px-8 pb-8">
+    <div class="flex items-end justify-between border-t border-paper/20 pt-4">
+      <span class="font-display uppercase leading-none text-[18vw] md:text-[9vw]">
+        <span id="loader-count">00</span><span class="text-accent">%</span>
+      </span>
+      <span class="stamp text-xs text-paper/60 mb-2 hidden sm:block">
+        PREPARING ASSETS
+      </span>
+    </div>
+    <div class="mt-4 h-[3px] w-full bg-paper/15">
+      <div id="loader-bar" class="h-full bg-accent" style="width: 0%"></div>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  (function () {
+    var loader = document.getElementById('loader');
+    var countEl = document.getElementById('loader-count');
+    var barEl = document.getElementById('loader-bar');
+    if (!loader) return;
+
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var html = document.documentElement;
+    var prevOverflow = html.style.overflow;
+    html.style.overflow = 'hidden';
+
+    function finish() {
+      html.style.overflow = prevOverflow;
+      loader.setAttribute('aria-hidden', 'true');
+      loader.classList.add('loader--done');
+
+      var cleanupDelay = reduceMotion ? 0 : 650;
+      window.setTimeout(function () {
+        loader.style.display = 'none';
+        
+        // Signal the rest of the application that the screen is revealed
+        document.documentElement.classList.add('loader-complete');
+        window.dispatchEvent(new CustomEvent('loader:finished'));
+      }, cleanupDelay);
+    }
+
+    if (reduceMotion) {
+      countEl.textContent = '100';
+      barEl.style.width = '100%';
+      if (document.readyState === 'complete') {
+        finish();
+      } else {
+        window.addEventListener('load', finish, { once: true });
+        window.setTimeout(finish, 4000);
+      }
+      return;
+    }
+
+    var start = performance.now();
+    var minDuration = 1500;
+    var maxWait = 4000;
+    var loaded = false;
+    var displayed = 0;
+
+    window.addEventListener(
+      'load',
+      function () {
+        loaded = true;
+      },
+      { once: true }
+    );
+
+    function tick(now) {
+      var elapsed = now - start;
+
+      var target = loaded
+        ? 100
+        : Math.min(92, (elapsed / minDuration) * 92);
+
+      displayed += (target - displayed) * 0.25;
+      var rounded = Math.round(displayed);
+
+      countEl.textContent = String(Math.min(rounded, 99)).padStart(2, '0');
+      barEl.style.width = Math.min(rounded, 100) + '%';
+
+      var doneWaiting = elapsed >= minDuration && (loaded || elapsed >= maxWait);
+
+      if (doneWaiting && rounded >= 98) {
+        countEl.textContent = '100';
+        barEl.style.width = '100%';
+        window.setTimeout(finish, 150);
+        return;
+      }
+
+      requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame(tick);
+  })();
+</script>
+
+<style>
+  .loader {
+    transition: transform 0.65s cubic-bezier(0.85, 0, 0.15, 1), opacity 0.65s ease;
+    will-change: transform, opacity;
+  }
+
+  /* Wipe up off the top edge */
+  :global(.loader--done) {
+    transform: translateY(-100%);
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .loader {
+      transition: none !important;
+    }
+    :global(.loader--done) {
+      transform: none !important;
+      opacity: 0 !important;
+    }
+  }
+</style>
