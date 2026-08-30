@@ -4,7 +4,10 @@ import tailwind from '@astrojs/tailwind';
 
 export default defineConfig({
   output: 'server',
-  adapter: vercel(),
+  adapter: vercel({
+    edgeMiddleware: false,
+    functionPerRoute: false,
+  }),
   integrations: [
     tailwind({
       applyBaseStyles: false,
