@@ -2,7 +2,7 @@
 import ScrollBackground from '../components/ScrollBackground.astro';
 import '../styles/global.css';
 import Loader from '../components/Loader.astro';
-import StarStreaks from '../components/StarStreaks.astro';
+
 
 interface Props {
   title?: string;
@@ -36,8 +36,6 @@ const {
 
     <!-- Persistent background layers -->
     <ScrollBackground />
-    <StarStreaks />
-
     <!-- Main page content -->
     <div class="relative z-10">
       <slot />
